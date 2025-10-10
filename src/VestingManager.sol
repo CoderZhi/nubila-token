@@ -6,14 +6,16 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 /// @title Vesting Manager with Vesting Schedules
 contract VestingManager {
     IERC20 public immutable token;
-    uint64 public immutable tgeTimestamp;
+    uint256 public immutable tgeTimestamp;
 
     uint32 public constant PPM = 1_000_000; // 100%
     uint64 public constant MONTH = 30 days;
+    uint64 public constant SEASON = 3 * MONTH;
+    uint64 public constant YEAR = 12 * MONTH;
 
     struct Term {
         uint32 percentage;
-        uint64 cliff;
+        uint256 cliff;
         uint64 period;
         uint16 num;
         uint16 next;
@@ -32,7 +34,7 @@ contract VestingManager {
     event ScheduleCreated(uint256 indexed id, address indexed beneficiary, uint256 totalAmount);
     event Vested(uint256 indexed id, address indexed beneficiary, uint256 indexed termIndex, uint256 periodIdx, uint256 amount);
 
-    constructor(address _token, uint64 _tgeTimestamp, address[] memory beneficiaries) {
+    constructor(address _token, uint256 _tgeTimestamp, address[] memory beneficiaries) {
         require(_token != address(0), "token zero");
         require(beneficiaries.length == 12, "need 12 addresses");
         token = IERC20(_token);
@@ -53,25 +55,23 @@ contract VestingManager {
 
         Term[] memory terms;
         {
-            terms = new Term[](2);
-            terms[0] = Term({ percentage: 50_000, cliff: 0, period: 0, num: 1, next: 0 });
-            terms[1] = Term({ percentage: 950_000, cliff: MONTH, period: MONTH, num: 60, next: 0 });
+            terms = new Term[](1);
+            terms[0] = Term({ percentage: PPM, cliff: 0, period: SEASON, num: 20, next: 0 });
             _createScheduleInternal(beneficiaries[0], A_device, terms);
         }
         {
-            terms = new Term[](2);
-            terms[0] = Term({ percentage: 50_000, cliff: 0, period: 0, num: 1, next: 0 });
-            terms[1] = Term({ percentage: 950_000, cliff: MONTH, period: MONTH, num: 60, next: 0 });
+            terms = new Term[](1);
+            terms[0] = Term({ percentage: PPM, cliff: 0, period: SEASON, num: 20, next: 0 });
             _createScheduleInternal(beneficiaries[1], A_node, terms);
         }
         {
             terms = new Term[](1);
-            terms[0] = Term({ percentage: PPM, cliff: 12 * MONTH, period: MONTH, num: 36, next: 0 });
+            terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 8, next: 0 });
             _createScheduleInternal(beneficiaries[2], A_preseed, terms);
         }
         {
             terms = new Term[](1);
-            terms[0] = Term({ percentage: PPM, cliff: 12 * MONTH, period: MONTH, num: 24, next: 0 });
+            terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 8, next: 0 });
             _createScheduleInternal(beneficiaries[3], A_seed, terms);
         }
         {
@@ -82,23 +82,23 @@ contract VestingManager {
         {
             terms = new Term[](2);
             terms[0] = Term({ percentage: 250_000, cliff: 0, period: 0, num: 1, next: 0 });
-            terms[1] = Term({ percentage: 750_000, cliff: MONTH, period: MONTH, num: 60, next: 0 });
+            terms[1] = Term({ percentage: 750_000, cliff: SEASON, period: SEASON, num: 20, next: 0 });
             _createScheduleInternal(beneficiaries[5], A_pos, terms);
         }
         {
             terms = new Term[](2);
             terms[0] = Term({ percentage: 400_000, cliff: 0, period: 0, num: 1, next: 0 });
-            terms[1] = Term({ percentage: 600_000, cliff: MONTH, period: MONTH, num: 12, next: 0 });
+            terms[1] = Term({ percentage: 600_000, cliff: SEASON, period: SEASON, num: 4, next: 0 });
             _createScheduleInternal(beneficiaries[6], A_found, terms);
         }
         {
             terms = new Term[](1);
-            terms[0] = Term({ percentage: PPM, cliff: 12 * MONTH, period: MONTH, num: 36, next: 0 });
+            terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 12, next: 0 });
             _createScheduleInternal(beneficiaries[7], A_team, terms);
         }
         {
             terms = new Term[](1);
-            terms[0] = Term({ percentage: PPM, cliff: 12 * MONTH, period: MONTH, num: 36, next: 0 });
+            terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 12, next: 0 });
             _createScheduleInternal(beneficiaries[8], A_adv, terms);
         }
         {
@@ -109,8 +109,8 @@ contract VestingManager {
         {
             terms = new Term[](3);
             terms[0] = Term({ percentage: 250_000, cliff: 0, period: 0, num: 1, next: 0 });
-            terms[1] = Term({ percentage: 250_000, cliff: 3 * MONTH, period: 0, num: 1, next: 0 });
-            terms[2] = Term({ percentage: 500_000, cliff: 6 * MONTH, period: 0, num: 1, next: 0 });
+            terms[1] = Term({ percentage: 250_000, cliff: SEASON, period: 0, num: 1, next: 0 });
+            terms[2] = Term({ percentage: 500_000, cliff: 2 * SEASON, period: 0, num: 1, next: 0 });
             _createScheduleInternal(beneficiaries[10], A_comm, terms);
         }
         {
