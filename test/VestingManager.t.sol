@@ -69,7 +69,7 @@ contract VestingManagerTest is Test {
             assertEq(terms[0].percentage, 1_000_000);
             assertEq(terms[0].cliff, 12 * 30 days);
             assertEq(terms[0].period, 90 days);
-            assertEq(terms[0].num, 8);
+            assertEq(terms[0].num, 12);
         }
         {
             (address beneficiary, uint256 totalAmount, uint256 vestedAmount, uint256 termIndex, VestingManager.Term[] memory terms) = manager.getSchedule(3);
@@ -323,7 +323,7 @@ contract VestingManagerTest is Test {
             vm.warp(tge + 4 * 90 days);
             assertEq(manager.claimable(0), 10_500_000 ether);
             assertEq(manager.claimable(1), 10_000_000 ether);
-            assertEq(manager.claimable(2), 7_812_500 ether);
+            assertEq(manager.claimable(2), 5_208_333 ether + 333_333_333_333_333_333);
             assertEq(manager.claimable(3), 10_000_000 ether);
             assertEq(manager.claimable(4), 0 ether);
             assertEq(manager.claimable(5), 2_437_500 ether);
@@ -343,7 +343,7 @@ contract VestingManagerTest is Test {
             manager.claim(8);
             assertEq(token.balanceOf(beneficiaries[0]), 42_000_000 ether);
             assertEq(token.balanceOf(beneficiaries[1]), 40_000_000 ether);
-            assertEq(token.balanceOf(beneficiaries[2]), 7_812_500 ether);
+            assertEq(token.balanceOf(beneficiaries[2]), 5_208_333 ether + 333_333_333_333_333_333);
             assertEq(token.balanceOf(beneficiaries[3]), 10_000_000 ether);
             assertEq(token.balanceOf(beneficiaries[4]), 5_000_000 ether);
             assertEq(token.balanceOf(beneficiaries[5]), 23_562_500 ether);
@@ -375,7 +375,7 @@ contract VestingManagerTest is Test {
             for (uint i = 5; i < 12; ++i) {
                 assertEq(manager.claimable(0), 10_500_000 ether);
                 assertEq(manager.claimable(1), 10_000_000 ether);
-                assertEq(manager.claimable(2), 7_812_500 ether);
+                assertEq(manager.claimable(2), 5_208_333 ether + 333_333_333_333_333_333);
                 assertEq(manager.claimable(3), 10_000_000 ether);
                 assertEq(manager.claimable(4), 0 ether);
                 assertEq(manager.claimable(5), 2_437_500 ether);
@@ -395,7 +395,7 @@ contract VestingManagerTest is Test {
             }
             assertEq(token.balanceOf(beneficiaries[0]), 126_000_000 ether);
             assertEq(token.balanceOf(beneficiaries[1]), 120_000_000 ether);
-            assertEq(token.balanceOf(beneficiaries[2]), 62_500_000 ether);
+            assertEq(token.balanceOf(beneficiaries[2]), 41_666_666 ether + 666_666_666_666_666_664);
             assertEq(token.balanceOf(beneficiaries[3]), 80_000_000 ether);
             assertEq(token.balanceOf(beneficiaries[4]), 5_000_000 ether);
             assertEq(token.balanceOf(beneficiaries[5]), 43_062_500 ether);
@@ -415,7 +415,6 @@ contract VestingManagerTest is Test {
             for (uint i = 12; i < 16; ++i) {
                 assertEq(manager.claimable(0), 10_500_000 ether);
                 assertEq(manager.claimable(1), 10_000_000 ether);
-                assertEq(manager.claimable(2), 0 ether);
                 assertEq(manager.claimable(3), 0 ether);
                 assertEq(manager.claimable(4), 0 ether);
                 assertEq(manager.claimable(5), 2_437_500 ether);
@@ -423,14 +422,17 @@ contract VestingManagerTest is Test {
                 assertEq(manager.claimable(7), 10_000_000 ether);
                 if (i == 15) {
                     assertEq(manager.claimable(8), 1_666_666 ether + 666_666_666_666_666_666 + 8);
+                    assertEq(manager.claimable(2), 5_208_333 ether + 333_333_333_333_333_333 + 4);
                 } else {
                     assertEq(manager.claimable(8), 1_666_666 ether + 666_666_666_666_666_666);
+                    assertEq(manager.claimable(2), 5_208_333 ether + 333_333_333_333_333_333);
                 }
                 assertEq(manager.claimable(9), 0 ether);
                 assertEq(manager.claimable(10), 0 ether);
                 assertEq(manager.claimable(11), 0 ether);
                 manager.claim(0);
                 manager.claim(1);
+                manager.claim(2);
                 manager.claim(5);
                 manager.claim(7);
                 manager.claim(8);

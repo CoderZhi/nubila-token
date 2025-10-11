@@ -66,7 +66,7 @@ contract VestingManager {
         }
         {
             terms = new Term[](1);
-            terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 8, next: 0 });
+            terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 12, next: 0 });
             _createScheduleInternal(beneficiaries[2], A_preseed, terms);
         }
         {
