@@ -2,9 +2,10 @@
 pragma solidity ^0.8.20;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 /// @title Vesting Manager with Vesting Schedules
-contract VestingManager {
+contract VestingManager is Ownable {
     IERC20 public immutable token;
     uint256 public immutable tgeTimestamp;
 
@@ -31,10 +32,11 @@ contract VestingManager {
 
     VestingSchedule[] private schedules;
 
-    event ScheduleCreated(uint256 indexed id, address indexed beneficiary, uint256 totalAmount);
-    event Vested(uint256 indexed id, address indexed beneficiary, uint256 indexed termIndex, uint256 periodIdx, uint256 amount);
+    event ScheduleCreated(uint256 indexed id, uint256 totalAmount);
+    event Vested(uint256 indexed id, uint256 indexed termIndex, uint256 indexed periodIdx, address beneficiary, uint256 amount);
+    event BeneficiaryUpdated(uint256 indexed id, address indexed newBeneficiary);
 
-    constructor(address _token, uint256 _tgeTimestamp, address[] memory beneficiaries) {
+    constructor(address _token, uint256 _tgeTimestamp, address[] memory beneficiaries) Ownable(msg.sender) {
         require(_token != address(0), "token zero");
         require(beneficiaries.length == 12, "need 12 addresses");
         token = IERC20(_token);
@@ -120,6 +122,14 @@ contract VestingManager {
         }
     }
 
+    function updateBeneficiary(uint256 scheduleId, address newBeneficiary) external onlyOwner {
+        require(scheduleId < schedules.length, "invalid index");
+        require(newBeneficiary != address(0), "new beneficiary is zero");
+        VestingSchedule storage s = schedules[scheduleId];
+        s.beneficiary = newBeneficiary;
+        emit BeneficiaryUpdated(scheduleId, newBeneficiary);
+    }
+
     function _createScheduleInternal(
         address beneficiary,
         uint256 totalAmount,
@@ -145,7 +155,8 @@ contract VestingManager {
             s.terms.push(terms[i]);
         }
        
-        emit ScheduleCreated(schedules.length - 1, beneficiary, totalAmount);
+        emit ScheduleCreated(schedules.length - 1, totalAmount);
+        emit BeneficiaryUpdated(schedules.length - 1, beneficiary);
     }
 
     function claim(uint256 scheduleId) external {
@@ -168,7 +179,7 @@ contract VestingManager {
         }
         require(token.transfer(s.beneficiary, amount), "transfer failed");
 
-        emit Vested(scheduleId, s.beneficiary, termIdx, periodIdx, amount);
+        emit Vested(scheduleId, termIdx, periodIdx, s.beneficiary, amount);
     }
 
     function numOfSchedules() external view returns (uint256) {

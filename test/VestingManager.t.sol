@@ -11,6 +11,11 @@ contract VestingManagerTest is Test {
     address[] public beneficiaries;
     uint256 public tge;
 
+    event Transfer(address indexed from, address indexed to, uint256 amount);
+    event ScheduleCreated(uint256 indexed id, uint256 totalAmount);
+    event Vested(uint256 indexed id, uint256 indexed termIndex, uint256 indexed periodIdx, address beneficiary, uint256 amount);
+    event BeneficiaryUpdated(uint256 indexed id, address indexed newBeneficiary);
+
     function setUp() public {
         beneficiaries.push(address(0x1));
         beneficiaries.push(address(0x2));
@@ -24,14 +29,60 @@ contract VestingManagerTest is Test {
         beneficiaries.push(address(0xA));
         beneficiaries.push(address(0xB));
         beneficiaries.push(address(0xC));
+        vm.expectEmit(true, true, false, true);
+        emit Transfer(address(0), address(this), 1_000_000_000 ether);
         token = new NubilaNetwork(address(this));
         tge = block.timestamp + 1 minutes;
+        vm.expectEmit(true, false, false, true);
+        emit ScheduleCreated(0, 210_000_000 ether);
+        emit BeneficiaryUpdated(0, address(0x1));
+        emit ScheduleCreated(1, 200_000_000 ether);
+        emit BeneficiaryUpdated(1, address(0x2));
+        emit ScheduleCreated(2, 62_500_000 ether);
+        emit BeneficiaryUpdated(2, address(0x3));
+        emit ScheduleCreated(3, 80_000_000 ether);
+        emit BeneficiaryUpdated(3, address(0x4));
+        emit ScheduleCreated(4, 5_000_000 ether);
+        emit BeneficiaryUpdated(4, address(0x5));
+        emit ScheduleCreated(5, 65_000_000 ether);
+        emit BeneficiaryUpdated(5, address(0x6));
+        emit ScheduleCreated(6, 78_000_000 ether);
+        emit BeneficiaryUpdated(6, address(0x7));
+        emit ScheduleCreated(7, 120_000_000 ether);
+        emit BeneficiaryUpdated(7, address(0x8));
+        emit ScheduleCreated(8, 20_000_000 ether);
+        emit BeneficiaryUpdated(8, address(0x9));
+        emit ScheduleCreated(9, 22_500_000 ether);
+        emit BeneficiaryUpdated(9, address(0xA));
+        emit ScheduleCreated(10, 75_000_000 ether);
+        emit BeneficiaryUpdated(10, address(0xB));
+        emit ScheduleCreated(11, 62_000_000 ether);
+        emit BeneficiaryUpdated(11, address(0xC));
         manager = new VestingManager(address(token), tge, beneficiaries);
+        vm.expectEmit(true, true, false, true, address(token));
+        emit Transfer(address(this), address(manager), 1_000_000_000 ether);
         assertTrue(token.transfer(address(manager), token.totalSupply()));
     }
 
     function testNumOfSchedules() public view {
         assertEq(manager.numOfSchedules(), 12);
+    }
+
+    function testUpdateBeneficiary() public {
+        vm.expectRevert("invalid index");
+        manager.updateBeneficiary(12, address(0x456));
+        vm.expectRevert("new beneficiary is zero");
+        manager.updateBeneficiary(0, address(0));
+
+        vm.expectEmit(true, true, false, true, address(manager));
+        emit BeneficiaryUpdated(0, address(0x456));
+        manager.updateBeneficiary(0, address(0x456));
+        (address beneficiary,,,,) = manager.getSchedule(0);
+        assertEq(beneficiary, address(0x456));
+
+        vm.expectRevert();
+        vm.prank(address(0x123));
+        manager.updateBeneficiary(0, address(0x654));
     }
 
     function testGetSchedule() public view {
@@ -222,13 +273,29 @@ contract VestingManagerTest is Test {
             assertEq(manager.claimable(9), 22_500_000 ether);
             assertEq(manager.claimable(10), 18_750_000 ether);
             assertEq(manager.claimable(11), 62_000_000 ether);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(0, 0, 0, beneficiaries[0], 10_500_000 ether);
             manager.claim(0);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(1, 0, 0, beneficiaries[1], 10_000_000 ether);
             manager.claim(1);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(4, 0, 0, beneficiaries[4], 5_000_000 ether);
             manager.claim(4);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(5, 0, 0, beneficiaries[5], 16_250_000 ether);
             manager.claim(5);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(6, 0, 0, beneficiaries[6], 31_200_000 ether);
             manager.claim(6);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(9, 0, 0, beneficiaries[9], 22_500_000 ether);
             manager.claim(9);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(10, 0, 0, beneficiaries[10], 18_750_000 ether);
             manager.claim(10);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(11, 0, 0, beneficiaries[11], 62_000_000 ether);
             manager.claim(11);
             assertEq(token.balanceOf(beneficiaries[0]), 10_500_000 ether);
             assertEq(token.balanceOf(beneficiaries[1]), 10_000_000 ether);
@@ -261,10 +328,20 @@ contract VestingManagerTest is Test {
             assertEq(manager.claimable(9), 0 ether);
             assertEq(manager.claimable(10), 18_750_000 ether);
             assertEq(manager.claimable(11), 0 ether);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(0, 0, 1, beneficiaries[0], 10_500_000 ether);
             manager.claim(0);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(1, 0, 1, beneficiaries[1], 10_000_000 ether);
             manager.claim(1);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(5, 1, 0, beneficiaries[5], 2_437_500 ether);
             manager.claim(5);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(6, 1, 0, beneficiaries[6], 11_700_000 ether);
             manager.claim(6);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(10, 1, 0, beneficiaries[10], 18_750_000 ether);
             manager.claim(10);
             assertEq(token.balanceOf(beneficiaries[0]), 21_000_000 ether);
             assertEq(token.balanceOf(beneficiaries[1]), 20_000_000 ether);
@@ -297,10 +374,20 @@ contract VestingManagerTest is Test {
             assertEq(manager.claimable(9), 0 ether);
             assertEq(manager.claimable(10), 37_500_000 ether);
             assertEq(manager.claimable(11), 0 ether);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(0, 0, 2, beneficiaries[0], 10_500_000 ether);
             manager.claim(0);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(1, 0, 2, beneficiaries[1], 10_000_000 ether);
             manager.claim(1);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(5, 1, 1, beneficiaries[5], 2_437_500 ether);
             manager.claim(5);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(6, 1, 1, beneficiaries[6], 11_700_000 ether);
             manager.claim(6);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(10, 2, 0, beneficiaries[10], 37_500_000 ether);
             manager.claim(10);
             assertEq(token.balanceOf(beneficiaries[0]), 31_500_000 ether);
             assertEq(token.balanceOf(beneficiaries[1]), 30_000_000 ether);
@@ -333,13 +420,29 @@ contract VestingManagerTest is Test {
             assertEq(manager.claimable(9), 0 ether);
             assertEq(manager.claimable(10), 0 ether);
             assertEq(manager.claimable(11), 0 ether);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(0, 0, 3, beneficiaries[0], 10_500_000 ether);
             manager.claim(0);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(1, 0, 3, beneficiaries[1], 10_000_000 ether);
             manager.claim(1);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(2, 0, 0, beneficiaries[2], 5_208_333 ether + 333_333_333_333_333_333);
             manager.claim(2);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(3, 0, 0, beneficiaries[3], 10_000_000 ether);
             manager.claim(3);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(5, 1, 2, beneficiaries[5], 2_437_500 ether);
             manager.claim(5);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(6, 1, 2, beneficiaries[6], 11_700_000 ether);
             manager.claim(6);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(7, 0, 0, beneficiaries[7], 10_000_000 ether);
             manager.claim(7);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(8, 0, 0, beneficiaries[8], 1_666_666 ether + 666_666_666_666_666_666);
             manager.claim(8);
             assertEq(token.balanceOf(beneficiaries[0]), 42_000_000 ether);
             assertEq(token.balanceOf(beneficiaries[1]), 40_000_000 ether);
@@ -357,9 +460,17 @@ contract VestingManagerTest is Test {
             assertEq(manager.claimable(1), 10_000_000 ether);
             assertEq(manager.claimable(5), 2_437_500 ether);
             assertEq(manager.claimable(6), 11_700_000 ether);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(0, 0, 4, beneficiaries[0], 10_500_000 ether);
             manager.claim(0);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(1, 0, 4, beneficiaries[1], 10_000_000 ether);
             manager.claim(1);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(5, 1, 3, beneficiaries[5], 2_437_500 ether);
             manager.claim(5);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(6, 1, 3, beneficiaries[6], 11_700_000 ether);
             manager.claim(6);
             assertEq(token.balanceOf(beneficiaries[0]), 52_500_000 ether);
             assertEq(token.balanceOf(beneficiaries[1]), 50_000_000 ether);
@@ -385,12 +496,26 @@ contract VestingManagerTest is Test {
                 assertEq(manager.claimable(9), 0 ether);
                 assertEq(manager.claimable(10), 0 ether);
                 assertEq(manager.claimable(11), 0 ether);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(0, 0, i, beneficiaries[0], 10_500_000 ether);
                 manager.claim(0);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(1, 0, i, beneficiaries[1], 10_000_000 ether);
                 manager.claim(1);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(2, 0, i - 4, beneficiaries[2], 5_208_333 ether + 333_333_333_333_333_333);
                 manager.claim(2);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(3, 0, i - 4, beneficiaries[3], 10_000_000 ether);
                 manager.claim(3);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(5, 1, i - 1, beneficiaries[5], 2_437_500 ether);
                 manager.claim(5);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(7, 0, i - 4, beneficiaries[7], 10_000_000 ether);
                 manager.claim(7);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(8, 0, i - 4, beneficiaries[8], 1_666_666 ether + 666_666_666_666_666_666);
                 manager.claim(8);
             }
             assertEq(token.balanceOf(beneficiaries[0]), 126_000_000 ether);
@@ -423,19 +548,37 @@ contract VestingManagerTest is Test {
                 if (i == 15) {
                     assertEq(manager.claimable(8), 1_666_666 ether + 666_666_666_666_666_666 + 8);
                     assertEq(manager.claimable(2), 5_208_333 ether + 333_333_333_333_333_333 + 4);
+                    vm.expectEmit(true, true, true, true, address(manager));
+                    emit Vested(2, 0, i - 4, beneficiaries[2], 5_208_333 ether + 333_333_333_333_333_333 + 4);
+                    manager.claim(2);
+                    vm.expectEmit(true, true, true, true, address(manager));
+                    emit Vested(8, 0, i - 4, beneficiaries[8], 1_666_666 ether + 666_666_666_666_666_666 + 8);
+                    manager.claim(8);
                 } else {
                     assertEq(manager.claimable(8), 1_666_666 ether + 666_666_666_666_666_666);
                     assertEq(manager.claimable(2), 5_208_333 ether + 333_333_333_333_333_333);
+                    vm.expectEmit(true, true, true, true, address(manager));
+                    emit Vested(2, 0, i - 4, beneficiaries[2], 5_208_333 ether + 333_333_333_333_333_333);
+                    manager.claim(2);
+                    vm.expectEmit(true, true, true, true, address(manager));
+                    emit Vested(8, 0, i - 4, beneficiaries[8], 1_666_666 ether + 666_666_666_666_666_666);
+                    manager.claim(8);
                 }
                 assertEq(manager.claimable(9), 0 ether);
                 assertEq(manager.claimable(10), 0 ether);
                 assertEq(manager.claimable(11), 0 ether);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(0, 0, i, beneficiaries[0], 10_500_000 ether);
                 manager.claim(0);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(1, 0, i, beneficiaries[1], 10_000_000 ether);
                 manager.claim(1);
-                manager.claim(2);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(5, 1, i - 1, beneficiaries[5], 2_437_500 ether);
                 manager.claim(5);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(7, 0, i - 4, beneficiaries[7], 10_000_000 ether);
                 manager.claim(7);
-                manager.claim(8);
             }
             assertEq(token.balanceOf(beneficiaries[0]), 168_000_000 ether);
             assertEq(token.balanceOf(beneficiaries[1]), 160_000_000 ether);
@@ -469,8 +612,14 @@ contract VestingManagerTest is Test {
                 assertEq(manager.claimable(9), 0 ether);
                 assertEq(manager.claimable(10), 0 ether);
                 assertEq(manager.claimable(11), 0 ether);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(0, 0, i, beneficiaries[0], 10_500_000 ether);
                 manager.claim(0);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(1, 0, i, beneficiaries[1], 10_000_000 ether);
                 manager.claim(1);
+                vm.expectEmit(true, true, true, true, address(manager));
+                emit Vested(5, 1, i - 1, beneficiaries[5], 2_437_500 ether);
                 manager.claim(5);
             }
             assertEq(token.balanceOf(beneficiaries[0]), 210_000_000 ether);
@@ -499,6 +648,8 @@ contract VestingManagerTest is Test {
             for (uint i = 6; i < 12; i++) {
                 assertEq(manager.claimable(i), 0 ether);
             }
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Vested(5, 1, 19, beneficiaries[5], 2_437_500 ether);
             manager.claim(5);
             assertEq(token.balanceOf(beneficiaries[5]), 65_000_000 ether);
             vm.warp(tge + 5000 days);
