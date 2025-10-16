@@ -15,6 +15,8 @@ contract VestingManagerTest is Test {
     event ScheduleCreated(uint256 indexed id, uint256 totalAmount);
     event Vested(uint256 indexed id, uint256 indexed termIndex, uint256 indexed periodIdx, address beneficiary, uint256 amount);
     event BeneficiaryUpdated(uint256 indexed id, address indexed newBeneficiary);
+    event Paused(address account);
+    event Unpaused(address account);
 
     function setUp() public {
         beneficiaries.push(address(0x1));
@@ -28,11 +30,20 @@ contract VestingManagerTest is Test {
         beneficiaries.push(address(0x9));
         beneficiaries.push(address(0xA));
         beneficiaries.push(address(0xB));
-        beneficiaries.push(address(0xC));
         vm.expectEmit(true, true, false, true);
         emit Transfer(address(0), address(this), 1_000_000_000 ether);
         token = new NubilaNetwork(address(this));
+        tge = block.timestamp;
+        vm.expectRevert("tge in past");
+        vm.warp(block.timestamp + 30 seconds);
+        manager = new VestingManager(address(token), tge, beneficiaries);
+        vm.expectRevert("need 12 addresses");
         tge = block.timestamp + 1 minutes;
+        manager = new VestingManager(address(token), tge, beneficiaries);
+        beneficiaries.push(address(0x0));
+        vm.expectRevert("beneficiary is zero");
+        manager = new VestingManager(address(token), tge, beneficiaries);
+        beneficiaries[11] = address(0xC);
         vm.expectEmit(true, false, false, true);
         emit ScheduleCreated(0, 210_000_000 ether);
         emit BeneficiaryUpdated(0, address(0x1));
@@ -73,6 +84,8 @@ contract VestingManagerTest is Test {
         manager.updateBeneficiary(12, address(0x456));
         vm.expectRevert("new beneficiary is zero");
         manager.updateBeneficiary(0, address(0));
+        vm.expectRevert("same beneficiary");
+        manager.updateBeneficiary(0, address(0x1));
 
         vm.expectEmit(true, true, false, true, address(manager));
         emit BeneficiaryUpdated(0, address(0x456));
@@ -273,6 +286,14 @@ contract VestingManagerTest is Test {
             assertEq(manager.claimable(9), 22_500_000 ether);
             assertEq(manager.claimable(10), 18_750_000 ether);
             assertEq(manager.claimable(11), 62_000_000 ether);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Paused(address(this));
+            manager.pause();
+            vm.expectRevert();
+            manager.claim(0);
+            vm.expectEmit(true, true, true, true, address(manager));
+            emit Unpaused(address(this));
+            manager.unpause();
             vm.expectEmit(true, true, true, true, address(manager));
             emit Vested(0, 0, 0, beneficiaries[0], 10_500_000 ether);
             manager.claim(0);

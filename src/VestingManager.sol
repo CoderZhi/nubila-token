@@ -3,9 +3,10 @@ pragma solidity ^0.8.20;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import "openzeppelin-contracts/contracts/utils/Pausable.sol";
 
 /// @title Vesting Manager with Vesting Schedules
-contract VestingManager is Ownable {
+contract VestingManager is Ownable, Pausable {
     IERC20 public immutable token;
     uint256 public immutable tgeTimestamp;
 
@@ -38,6 +39,7 @@ contract VestingManager is Ownable {
 
     constructor(address _token, uint256 _tgeTimestamp, address[] memory beneficiaries) Ownable(msg.sender) {
         require(_token != address(0), "token zero");
+        require(_tgeTimestamp > block.timestamp, "tge in past");
         require(beneficiaries.length == 12, "need 12 addresses");
         token = IERC20(_token);
         tgeTimestamp = _tgeTimestamp;
@@ -126,6 +128,7 @@ contract VestingManager is Ownable {
         require(scheduleId < schedules.length, "invalid index");
         require(newBeneficiary != address(0), "new beneficiary is zero");
         VestingSchedule storage s = schedules[scheduleId];
+        require(s.beneficiary != newBeneficiary, "same beneficiary");
         s.beneficiary = newBeneficiary;
         emit BeneficiaryUpdated(scheduleId, newBeneficiary);
     }
@@ -134,7 +137,8 @@ contract VestingManager is Ownable {
         address beneficiary,
         uint256 totalAmount,
         Term[] memory terms
-    ) internal {        
+    ) internal {
+        require(beneficiary != address(0), "beneficiary is zero");
         uint256 sumWeight = 0;
         for (uint i = 0; i < terms.length; ++i) {
             if (terms[i].period == 0) {
@@ -159,7 +163,7 @@ contract VestingManager is Ownable {
         emit BeneficiaryUpdated(schedules.length - 1, beneficiary);
     }
 
-    function claim(uint256 scheduleId) external {
+    function claim(uint256 scheduleId) external whenNotPaused {
         require(scheduleId < schedules.length, "invalid index");
         VestingSchedule storage s = schedules[scheduleId];
         require(s.termIndex < s.terms.length, "invalid term index");
@@ -180,6 +184,20 @@ contract VestingManager is Ownable {
         require(token.transfer(s.beneficiary, amount), "transfer failed");
 
         emit Vested(scheduleId, termIdx, periodIdx, s.beneficiary, amount);
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    function emergencyWithdraw(uint256 amount) external onlyOwner {
+        uint256 balance = token.balanceOf(address(this));
+        require(amount > 0 && amount <= balance, "invalid amount");
+        require(token.transfer(owner(), amount), "transfer failed");
     }
 
     function numOfSchedules() external view returns (uint256) {
