@@ -50,6 +50,9 @@ $ anvil
 ```shell
 $ TGE=$timestamp forge script script/NubilaNetwork.s.sol:NubilaNetworkScript --rpc-url <your_rpc_url> --private-key <your_private_key> 
 ```
+* `timestamp` is the moment when tokens are officially distributed to public.
+* The beneficiaries are set to be the owner of VestingManager contract, which could be updated later.
+* Eventually, the ownership of the VestingManager contract should be transferred to a MultiSig wallet for security purpose.
 
 ### Cast
 
