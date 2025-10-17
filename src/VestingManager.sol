@@ -40,22 +40,20 @@ contract VestingManager is Ownable, Pausable {
     constructor(address _token, uint256 _tgeTimestamp, address[] memory beneficiaries) Ownable(msg.sender) {
         require(_token != address(0), "token zero");
         require(_tgeTimestamp > block.timestamp, "tge in past");
-        require(beneficiaries.length == 12, "need 12 addresses");
+        require(beneficiaries.length == 10, "need 10 addresses");
         token = IERC20(_token);
         tgeTimestamp = _tgeTimestamp;
 
-        uint256 A_device  = 210_000_000 ether;
-        uint256 A_node    = 200_000_000 ether;
-        uint256 A_preseed = 62_500_000 ether;
-        uint256 A_seed    = 80_000_000 ether;
-        uint256 A_public  = 5_000_000 ether;
-        uint256 A_pos     = 65_000_000 ether;
-        uint256 A_found   = 78_000_000 ether;
-        uint256 A_team    = 120_000_000 ether;
-        uint256 A_adv     = 20_000_000 ether;
-        uint256 A_liq     = 22_500_000 ether;
-        uint256 A_comm    = 75_000_000 ether;
-        uint256 A_cex     = 62_000_000 ether;
+        uint256 A_device    = 210_000_000 ether;
+        uint256 A_node      = 200_000_000 ether;
+        uint256 A_hacker1   = 62_500_000 ether;
+        uint256 A_hacker2   = 80_000_000 ether;
+        uint256 A_pos       = 65_000_000 ether;
+        uint256 A_treasury  = 60_000_000 ether;
+        uint256 A_team      = 140_000_000 ether;
+        uint256 A_liq       = 22_500_000 ether;
+        uint256 A_airdrop   = 75_000_000 ether;
+        uint256 A_marketing = 85_000_000 ether;
 
         Term[] memory terms;
         {
@@ -71,56 +69,45 @@ contract VestingManager is Ownable, Pausable {
         {
             terms = new Term[](1);
             terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 12, next: 0 });
-            _createScheduleInternal(beneficiaries[2], A_preseed, terms);
+            _createScheduleInternal(beneficiaries[2], A_hacker1, terms);
         }
         {
             terms = new Term[](1);
             terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 8, next: 0 });
-            _createScheduleInternal(beneficiaries[3], A_seed, terms);
-        }
-        {
-            terms = new Term[](1);
-            terms[0] = Term({ percentage: PPM, cliff: 0, period: 0, num: 1, next: 0 });
-            _createScheduleInternal(beneficiaries[4], A_public, terms);
-        }
-        {
+            _createScheduleInternal(beneficiaries[3], A_hacker2, terms);
+        }{
             terms = new Term[](2);
             terms[0] = Term({ percentage: 250_000, cliff: 0, period: 0, num: 1, next: 0 });
             terms[1] = Term({ percentage: 750_000, cliff: SEASON, period: SEASON, num: 20, next: 0 });
-            _createScheduleInternal(beneficiaries[5], A_pos, terms);
+            _createScheduleInternal(beneficiaries[4], A_pos, terms);
         }
         {
             terms = new Term[](2);
             terms[0] = Term({ percentage: 400_000, cliff: 0, period: 0, num: 1, next: 0 });
             terms[1] = Term({ percentage: 600_000, cliff: SEASON, period: SEASON, num: 4, next: 0 });
-            _createScheduleInternal(beneficiaries[6], A_found, terms);
+            _createScheduleInternal(beneficiaries[5], A_treasury, terms);
         }
         {
             terms = new Term[](1);
             terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 12, next: 0 });
-            _createScheduleInternal(beneficiaries[7], A_team, terms);
-        }
-        {
-            terms = new Term[](1);
-            terms[0] = Term({ percentage: PPM, cliff: YEAR, period: SEASON, num: 12, next: 0 });
-            _createScheduleInternal(beneficiaries[8], A_adv, terms);
+            _createScheduleInternal(beneficiaries[6], A_team, terms);
         }
         {
             terms = new Term[](1);
             terms[0] = Term({ percentage: PPM, cliff: 0, period: 0, num: 1, next: 0 });
-            _createScheduleInternal(beneficiaries[9], A_liq, terms);
+            _createScheduleInternal(beneficiaries[7], A_liq, terms);
         }
         {
             terms = new Term[](3);
             terms[0] = Term({ percentage: 250_000, cliff: 0, period: 0, num: 1, next: 0 });
             terms[1] = Term({ percentage: 250_000, cliff: SEASON, period: 0, num: 1, next: 0 });
             terms[2] = Term({ percentage: 500_000, cliff: 2 * SEASON, period: 0, num: 1, next: 0 });
-            _createScheduleInternal(beneficiaries[10], A_comm, terms);
+            _createScheduleInternal(beneficiaries[8], A_airdrop, terms);
         }
         {
             terms = new Term[](1);
             terms[0] = Term({ percentage: PPM, cliff: 0, period: 0, num: 1, next: 0 });
-            _createScheduleInternal(beneficiaries[11], A_cex, terms);
+            _createScheduleInternal(beneficiaries[9], A_marketing, terms);
         }
     }
 
